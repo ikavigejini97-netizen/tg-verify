@@ -24,54 +24,57 @@
         <button class="btn" id="lockBtn" onclick="processHardwareID()">Lock This Device</button>
         <div class="loader" id="loader"></div>
     </div>
+    
+        <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
 
-        function processHardwareID() {
-            document.getElementById('lockBtn').style.display = 'none';
-            document.getElementById('loader').style.display = 'block';
+function processHardwareID() {
 
-            // Extract deeply embedded device traits clone apps fail to mock
-            const canvas = document.createElement('canvas');
-            const gl = canvas.getContext('webgl');
-            const debugInfo = gl ? gl.getExtension('WEBGL_debug_renderer_info') : null;
-            const gpu = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : "NoGPU";
+  document.getElementById("lockBtn").style.display = "none";
+  document.getElementById("loader").style.display = "block";
 
-            const coreSignature = [
-                navigator.userAgent,
-                screen.width + "x" + screen.height,
-                navigator.hardwareConcurrency || "0",
-                gpu,
-                navigator.deviceMemory || "0"
-            ].join('||');
+  const canvas = document.createElement("canvas");
+  const gl = canvas.getContext("webgl");
 
-            // Generate a secure numerical checksum layout hash
-            let finalHash = 0;
-            for (let i = 0; i < coreSignature.length; i++) {
-                finalHash = (finalHash << 5) - finalHash + coreSignature.charCodeAt(i);
-                finalHash |= 0;
-            }
+  let gpu = "unknown";
 
-            // Extract the user parameters from the browser location string
-            const params = new URLSearchParams(window.location.search);
-            const tgId = params.get('id');
-            const botId = params.get('bot');
+  if (gl) {
+    const info = gl.getExtension("WEBGL_debug_renderer_info");
+    if (info) {
+      gpu = gl.getParameter(info.UNMASKED_RENDERER_WEBGL);
+    }
+  }
 
-            // Push payload data package straight back to your Bots.Business Webhook
-            const webhookUrl = `https://bots.business{botId}/webhook?command=onDeviceVerifyCallback&tg_id=${tgId}&hardware_id=${Math.abs(finalHash)}`;
+  const fingerprint =
+    navigator.userAgent +
+    "|" +
+    screen.width +
+    "x" +
+    screen.height +
+    "|" +
+    (navigator.hardwareConcurrency || 0) +
+    "|" +
+    (navigator.deviceMemory || 0) +
+    "|" +
+    gpu;
 
-            fetch(webhookUrl)
-            .then(() => {
-                setTimeout(() => { tg.close(); }, 800);
-            })
-            .catch(() => {
-                alert("Network error, please try again.");
-                document.getElementById('lockBtn').style.display = 'block';
-                document.getElementById('loader').style.display = 'none';
-            });
-        }
+  let hash = 0;
+
+  for (let i = 0; i < fingerprint.length; i++) {
+    hash = ((hash << 5) - hash) + fingerprint.charCodeAt(i);
+    hash |= 0;
+  }
+
+  hash = Math.abs(hash);
+
+  window.location.href =
+  "https://t.me/Ultra_instant_bot?start=verify_" + hash;
+
+}
     </script>
 </body>
 </html>
